@@ -20,17 +20,20 @@ const FacultyDashboard = () => {
       return;
     }
     
+    // Get faculty priority from user object, default to 1 if not specified
+    const facultyPriority = user?.priority || 1;
+    
     // Get passes for faculty approval
-    const facultyPasses = getFacultyPasses(user.priority);
+    const facultyPasses = getFacultyPasses(facultyPriority);
     setPasses(facultyPasses);
     
     // Refresh data periodically to check for new passes or escalations
     const interval = setInterval(() => {
-      setPasses(getFacultyPasses(user.priority));
+      setPasses(getFacultyPasses(facultyPriority));
     }, 60000); // Every minute
     
     return () => clearInterval(interval);
-  }, [navigate, user]);
+  }, [navigate]); // Remove user from dependency array to prevent infinite loops
   
   const handleApprove = (passId) => {
     const updatedPass = updatePass(passId, { 

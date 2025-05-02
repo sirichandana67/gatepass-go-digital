@@ -1,5 +1,6 @@
 
 // Mock pass data
+import { getCurrentUser } from './auth';
 
 let passes = [
   {
@@ -37,9 +38,8 @@ export const getStudentPasses = (studentId) => {
 
 // Get passes for approval by parent
 export const getParentPasses = (parentUserId) => {
-  // In a real app, you'd fetch the student IDs linked to this parent
-  // For now, we'll use the mock data
-  const parentUser = require('./auth').users.find(u => u.id === parentUserId);
+  // We get the current user directly without using require
+  const parentUser = getCurrentUser();
   if (!parentUser || !parentUser.studentId) return [];
   
   return passes.filter(pass => 

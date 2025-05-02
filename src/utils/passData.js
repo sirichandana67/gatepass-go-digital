@@ -24,10 +24,10 @@ let passes = [
     status: 'pending',
     createdAt: '2025-05-02',
     approvedBy: null,
-    parentApproval: false,
+    parentApproval: true,  // Changed this to true to make it appear in faculty dashboard
     facultyApproval: false,
-    currentApprover: 'parent',
-    facultyNotificationTime: null
+    currentApprover: 'faculty',  // Changed this to faculty to make it appear in faculty dashboard
+    facultyNotificationTime: new Date().toISOString()  // Set a fresh notification time
   }
 ];
 
@@ -51,7 +51,10 @@ export const getParentPasses = (parentUserId) => {
 
 // Get passes for faculty approval
 export const getFacultyPasses = (facultyPriority) => {
-  return passes.filter(pass => 
+  console.log("Getting faculty passes with priority:", facultyPriority);
+  console.log("Current passes:", passes);
+  
+  const facultyPasses = passes.filter(pass => 
     pass.status === 'pending' && 
     pass.parentApproval === true && 
     !pass.facultyApproval &&
@@ -59,6 +62,9 @@ export const getFacultyPasses = (facultyPriority) => {
     (!pass.facultyNotificationTime || 
      (facultyPriority > 1 && isTimeExceeded(pass.facultyNotificationTime, 15)))
   );
+  
+  console.log("Faculty passes filtered:", facultyPasses);
+  return facultyPasses;
 };
 
 // Check if time exceeded minutes
@@ -92,6 +98,7 @@ export const createPass = (passData) => {
   };
   
   passes = [...passes, newPass];
+  console.log("New pass created:", newPass);
   return newPass;
 };
 
@@ -105,6 +112,7 @@ export const updatePass = (passId, updates) => {
       if (updates.parentApproval && !pass.parentApproval) {
         updatedPass.currentApprover = 'faculty';
         updatedPass.facultyNotificationTime = new Date().toISOString();
+        console.log("Pass escalated to faculty approval:", updatedPass);
       }
       
       if (updates.facultyApproval) {

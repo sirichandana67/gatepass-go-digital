@@ -7,8 +7,9 @@ import { getFacultyPasses, updatePass } from '../utils/passData';
 
 const FacultyDashboard = () => {
   const navigate = useNavigate();
-  const user = getCurrentUser();
   const [passes, setPasses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const user = getCurrentUser();
   
   useEffect(() => {
     if (!requireAuth(navigate)) {
@@ -24,13 +25,20 @@ const FacultyDashboard = () => {
     const facultyPriority = user?.priority || 1;
     
     // Get passes for faculty approval
-    const facultyPasses = getFacultyPasses(facultyPriority);
-    setPasses(facultyPasses);
+    const loadPasses = () => {
+      console.log("Loading faculty passes...");
+      const facultyPasses = getFacultyPasses(facultyPriority);
+      console.log("Faculty passes loaded:", facultyPasses);
+      setPasses(facultyPasses);
+      setLoading(false);
+    };
+    
+    loadPasses();
     
     // Refresh data periodically to check for new passes or escalations
     const interval = setInterval(() => {
-      setPasses(getFacultyPasses(facultyPriority));
-    }, 60000); // Every minute
+      loadPasses();
+    }, 15000); // Every 15 seconds for testing purposes
     
     return () => clearInterval(interval);
   }, [navigate]); // Remove user from dependency array to prevent infinite loops
@@ -41,6 +49,8 @@ const FacultyDashboard = () => {
       approvedBy: user.id
     });
     
+    console.log("Pass approved:", updatedPass);
+    
     // Remove the approved pass from the list
     setPasses(prev => prev.filter(p => p.id !== passId));
   };
@@ -50,6 +60,8 @@ const FacultyDashboard = () => {
       status: 'rejected',
       facultyApproval: false
     });
+    
+    console.log("Pass rejected:", updatedPass);
     
     // Remove the rejected pass from the list
     setPasses(prev => prev.filter(p => p.id !== passId));
@@ -70,7 +82,9 @@ const FacultyDashboard = () => {
           <div className="card">
             <h3 className="card-title">Pending Gate Pass Approvals</h3>
             
-            {passes.length === 0 ? (
+            {loading ? (
+              <p>Loading approvals...</p>
+            ) : passes.length === 0 ? (
               <p>No pending approvals at this time.</p>
             ) : (
               <div className="pass-container">

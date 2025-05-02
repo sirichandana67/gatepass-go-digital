@@ -32,6 +32,20 @@ const PassCard = ({ pass }) => {
         <p><strong>Time:</strong> {pass.time}</p>
         <p><strong>Reason:</strong> {pass.reason}</p>
         
+        {pass.parentApproval !== undefined && (
+          <p><strong>Parent Approval:</strong> {pass.parentApproval ? 
+            <span style={{ color: 'green' }}>Approved</span> : 
+            <span style={{ color: 'orange' }}>Pending</span>}
+          </p>
+        )}
+
+        {pass.facultyApproval !== undefined && pass.parentApproval && (
+          <p><strong>Faculty Approval:</strong> {pass.facultyApproval ? 
+            <span style={{ color: 'green' }}>Approved</span> : 
+            <span style={{ color: 'orange' }}>Pending</span>}
+          </p>
+        )}
+        
         {pass.status === 'approved' && (
           <div className="text-center mt-20">
             <QRCode value={`GATEPASS-${pass.id}`} />

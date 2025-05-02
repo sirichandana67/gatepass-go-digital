@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { login, redirectBasedOnRole } from '../utils/auth';
 
-const Login = () => {
+const FacultyLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -33,7 +33,7 @@ const Login = () => {
       <div className="page">
         <div className="container">
           <div className="card login-container">
-            <h2 className="card-title text-center">Student Login</h2>
+            <h2 className="card-title text-center">Faculty Login</h2>
             
             {error && (
               <div style={{
@@ -81,14 +81,14 @@ const Login = () => {
             
             <div className="mt-20 text-center">
               <p>Demo accounts:</p>
-              <p>Student: student@example.com / student123</p>
-              <p>Security: security@example.com / security123</p>
+              <p>Primary Faculty: faculty1@example.com / faculty123</p>
+              <p>Secondary Faculty: faculty2@example.com / faculty123</p>
               
               <div className="mt-20">
-                <p>Are you a parent or faculty?</p>
+                <p>Are you a student or parent?</p>
                 <div style={{ marginTop: '15px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                  <Link to="/login" className="btn btn-secondary">Student Login</Link>
                   <Link to="/parent-login" className="btn btn-secondary">Parent Login</Link>
-                  <Link to="/faculty-login" className="btn btn-secondary">Faculty Login</Link>
                 </div>
               </div>
             </div>
@@ -99,4 +99,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default FacultyLogin;

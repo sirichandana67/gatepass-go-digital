@@ -9,7 +9,10 @@ let passes = [
     time: '2:30 PM - 5:00 PM',
     reason: 'Doctor appointment',
     status: 'approved',
-    createdAt: '2025-05-01'
+    createdAt: '2025-05-01',
+    approvedBy: 'faculty',
+    parentApproval: true,
+    facultyApproval: true
   },
   {
     id: 'GP002',
@@ -18,7 +21,12 @@ let passes = [
     time: '10:00 AM - 12:00 PM',
     reason: 'Family emergency',
     status: 'pending',
-    createdAt: '2025-05-02'
+    createdAt: '2025-05-02',
+    approvedBy: null,
+    parentApproval: false,
+    facultyApproval: false,
+    currentApprover: 'parent',
+    facultyNotificationTime: null
   }
 ];
 
@@ -26,6 +34,43 @@ let passes = [
 export const getStudentPasses = (studentId) => {
   return passes.filter(pass => pass.studentId === studentId);
 };
+
+// Get passes for approval by parent
+export const getParentPasses = (parentUserId) => {
+  // In a real app, you'd fetch the student IDs linked to this parent
+  // For now, we'll use the mock data
+  const parentUser = require('./auth').users.find(u => u.id === parentUserId);
+  if (!parentUser || !parentUser.studentId) return [];
+  
+  return passes.filter(pass => 
+    pass.studentId === parentUser.studentId && 
+    pass.status === 'pending' && 
+    pass.currentApprover === 'parent'
+  );
+};
+
+// Get passes for faculty approval
+export const getFacultyPasses = (facultyPriority) => {
+  return passes.filter(pass => 
+    pass.status === 'pending' && 
+    pass.parentApproval === true && 
+    !pass.facultyApproval &&
+    pass.currentApprover === 'faculty' &&
+    (!pass.facultyNotificationTime || 
+     (facultyPriority > 1 && isTimeExceeded(pass.facultyNotificationTime, 15)))
+  );
+};
+
+// Check if time exceeded minutes
+function isTimeExceeded(timeString, minutes) {
+  if (!timeString) return false;
+  
+  const time = new Date(timeString);
+  const now = new Date();
+  const diffInMinutes = (now - time) / (1000 * 60);
+  
+  return diffInMinutes > minutes;
+}
 
 // Get a specific pass
 export const getPass = (passId) => {
@@ -38,7 +83,12 @@ export const createPass = (passData) => {
     ...passData,
     id: `GP${String(passes.length + 1).padStart(3, '0')}`,
     status: 'pending',
-    createdAt: new Date().toISOString().split('T')[0]
+    createdAt: new Date().toISOString().split('T')[0],
+    approvedBy: null,
+    parentApproval: false,
+    facultyApproval: false,
+    currentApprover: 'parent',
+    facultyNotificationTime: null
   };
   
   passes = [...passes, newPass];
@@ -47,9 +97,28 @@ export const createPass = (passData) => {
 
 // Update a pass (for admin approval)
 export const updatePass = (passId, updates) => {
-  passes = passes.map(pass => 
-    pass.id === passId ? { ...pass, ...updates } : pass
-  );
+  passes = passes.map(pass => {
+    if (pass.id === passId) {
+      const updatedPass = { ...pass, ...updates };
+      
+      // Handle approval workflow
+      if (updates.parentApproval && !pass.parentApproval) {
+        updatedPass.currentApprover = 'faculty';
+        updatedPass.facultyNotificationTime = new Date().toISOString();
+      }
+      
+      if (updates.facultyApproval) {
+        updatedPass.status = 'approved';
+      }
+      
+      if (updatedPass.parentApproval && updatedPass.facultyApproval) {
+        updatedPass.status = 'approved';
+      }
+      
+      return updatedPass;
+    }
+    return pass;
+  });
   
   return getPass(passId);
 };
@@ -85,3 +154,34 @@ export const getStats = (studentId) => {
     rejected: studentPasses.filter(p => p.status === 'rejected').length
   };
 };
+
+// Check and update faculty notification times
+export const updateFacultyNotifications = () => {
+  const now = new Date();
+  
+  passes = passes.map(pass => {
+    if (pass.status === 'pending' && 
+        pass.parentApproval && 
+        !pass.facultyApproval &&
+        pass.currentApprover === 'faculty' &&
+        pass.facultyNotificationTime) {
+          
+      const notificationTime = new Date(pass.facultyNotificationTime);
+      const diffInMinutes = (now - notificationTime) / (1000 * 60);
+      
+      if (diffInMinutes > 15) {
+        // Escalate to next faculty
+        return {
+          ...pass,
+          facultyPriority: 2,
+          facultyNotificationTime: now.toISOString()
+        };
+      }
+    }
+    
+    return pass;
+  });
+};
+
+// This would be called by a timer in a real app
+setInterval(updateFacultyNotifications, 60000); // Check every minute

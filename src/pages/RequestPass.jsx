@@ -65,7 +65,7 @@ const RequestPass = () => {
     // Redirect after 2 seconds
     setTimeout(() => {
       navigate('/my-passes');
-    }, 2000);
+    }, 3000);
   };
   
   if (!user) {
@@ -90,6 +90,8 @@ const RequestPass = () => {
                 textAlign: 'center'
               }}>
                 <p style={{ fontSize: '18px', marginBottom: '10px' }}>Gate pass request submitted successfully!</p>
+                <p style={{ marginBottom: '10px' }}>Your request will be sent to your parent for approval first.</p>
+                <p style={{ marginBottom: '10px' }}>After parent approval, it will be forwarded to faculty for final approval.</p>
                 <p>Redirecting to your passes...</p>
               </div>
             ) : (
@@ -134,6 +136,16 @@ const RequestPass = () => {
                     rows="4"
                     placeholder="Please provide a reason for your gate pass request"
                   ></textarea>
+                </div>
+                
+                <div className="info-box" style={{ 
+                  backgroundColor: '#f8f9fa', 
+                  padding: '10px', 
+                  borderRadius: '4px', 
+                  marginBottom: '20px',
+                  border: '1px solid #dee2e6'
+                }}>
+                  <p><strong>Note:</strong> Your request requires both parent and faculty approval before it becomes active.</p>
                 </div>
                 
                 <div className="text-center">

@@ -3,11 +3,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { requireAuth, getCurrentUser, hasRole } from '../utils/auth';
-import { getFacultyPasses, updatePass } from '../utils/passData';
+import { getFacultyPasses, updatePass, getStudentPasses } from '../utils/passData';
+import { toast } from 'sonner';
 
 const FacultyDashboard = () => {
   const navigate = useNavigate();
-  const [passes, setPasses] = useState([]);
+  const [pendingPasses, setPendingPasses] = useState([]);
+  const [approvedPasses, setApprovedPasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const user = getCurrentUser();
   
@@ -24,12 +26,24 @@ const FacultyDashboard = () => {
     // Get faculty priority from user object, default to 1 if not specified
     const facultyPriority = user?.priority || 1;
     
-    // Get passes for faculty approval
     const loadPasses = () => {
       console.log("Loading faculty passes...");
+      // Get pending passes for faculty approval
       const facultyPasses = getFacultyPasses(facultyPriority);
-      console.log("Faculty passes loaded:", facultyPasses);
-      setPasses(facultyPasses);
+      console.log("Faculty pending passes loaded:", facultyPasses);
+      setPendingPasses(facultyPasses);
+      
+      // Get passes that were already approved by this faculty member
+      const allPasses = facultyPasses.length > 0 && facultyPasses[0]?.studentId
+        ? getStudentPasses(facultyPasses[0].studentId)
+        : [];
+        
+      const alreadyApproved = allPasses.filter(p => 
+        p.facultyApproval && (p.status === 'approved' || p.status === 'pending')
+      );
+      
+      console.log("Faculty approved passes loaded:", alreadyApproved);
+      setApprovedPasses(alreadyApproved);
       setLoading(false);
     };
     
@@ -46,13 +60,16 @@ const FacultyDashboard = () => {
   const handleApprove = (passId) => {
     const updatedPass = updatePass(passId, { 
       facultyApproval: true,
-      approvedBy: user.id
+      approvedBy: user.id,
+      status: 'approved'
     });
     
     console.log("Pass approved:", updatedPass);
+    toast.success("Gate pass approved successfully");
     
-    // Remove the approved pass from the list
-    setPasses(prev => prev.filter(p => p.id !== passId));
+    // Move the approved pass from pending to approved list
+    setPendingPasses(prev => prev.filter(p => p.id !== passId));
+    setApprovedPasses(prev => [...prev, updatedPass]);
   };
   
   const handleReject = (passId) => {
@@ -62,9 +79,10 @@ const FacultyDashboard = () => {
     });
     
     console.log("Pass rejected:", updatedPass);
+    toast.error("Gate pass rejected");
     
-    // Remove the rejected pass from the list
-    setPasses(prev => prev.filter(p => p.id !== passId));
+    // Remove the rejected pass from the pending list
+    setPendingPasses(prev => prev.filter(p => p.id !== passId));
   };
   
   if (!user) {
@@ -84,11 +102,11 @@ const FacultyDashboard = () => {
             
             {loading ? (
               <p>Loading approvals...</p>
-            ) : passes.length === 0 ? (
+            ) : pendingPasses.length === 0 ? (
               <p>No pending approvals at this time.</p>
             ) : (
               <div className="pass-container">
-                {passes.map(pass => (
+                {pendingPasses.map(pass => (
                   <div key={pass.id} className="pass-card">
                     <div className="pass-header">
                       <div className="flex-between">
@@ -118,6 +136,42 @@ const FacultyDashboard = () => {
                           Reject
                         </button>
                       </div>
+                    </div>
+                    <div className="pass-footer">
+                      <span>Created on: {pass.createdAt}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div className="card mt-20">
+            <h3 className="card-title">Approved Requests</h3>
+            
+            {loading ? (
+              <p>Loading approved passes...</p>
+            ) : approvedPasses.length === 0 ? (
+              <p>No approved requests yet.</p>
+            ) : (
+              <div className="pass-container">
+                {approvedPasses.map(pass => (
+                  <div key={pass.id} className="pass-card">
+                    <div className="pass-header">
+                      <div className="flex-between">
+                        <span>Gate Pass #{pass.id}</span>
+                        <span className={`pass-status ${pass.status === 'approved' ? 'status-approved' : 'status-pending'}`}>
+                          {pass.status.charAt(0).toUpperCase() + pass.status.slice(1)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="pass-body">
+                      <p><strong>Student ID:</strong> {pass.studentId}</p>
+                      <p><strong>Date:</strong> {pass.date}</p>
+                      <p><strong>Time:</strong> {pass.time}</p>
+                      <p><strong>Reason:</strong> {pass.reason}</p>
+                      <p><strong>Parent Approval:</strong> <span style={{ color: 'green' }}>Approved</span></p>
+                      <p><strong>Faculty Approval:</strong> <span style={{ color: 'green' }}>Approved</span></p>
                     </div>
                     <div className="pass-footer">
                       <span>Created on: {pass.createdAt}</span>

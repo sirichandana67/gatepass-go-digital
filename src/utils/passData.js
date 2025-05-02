@@ -13,7 +13,11 @@ let passes = [
     createdAt: '2025-05-01',
     approvedBy: 'faculty',
     parentApproval: true,
-    facultyApproval: true
+    facultyApproval: true,
+    notifications: {
+      student: true,
+      parent: true
+    }
   },
   {
     id: 'GP002',
@@ -24,10 +28,14 @@ let passes = [
     status: 'pending',
     createdAt: '2025-05-02',
     approvedBy: null,
-    parentApproval: true,  // Changed this to true to make it appear in faculty dashboard
+    parentApproval: true,  // Set to true so it appears in faculty dashboard
     facultyApproval: false,
-    currentApprover: 'faculty',  // Changed this to faculty to make it appear in faculty dashboard
-    facultyNotificationTime: new Date().toISOString()  // Set a fresh notification time
+    currentApprover: 'faculty',  // Set to faculty so it appears in faculty dashboard
+    facultyNotificationTime: new Date().toISOString(),
+    notifications: {
+      student: false,
+      parent: true
+    }
   }
 ];
 
@@ -94,7 +102,11 @@ export const createPass = (passData) => {
     parentApproval: false,
     facultyApproval: false,
     currentApprover: 'parent',
-    facultyNotificationTime: null
+    facultyNotificationTime: null,
+    notifications: {
+      student: false,
+      parent: false
+    }
   };
   
   passes = [...passes, newPass];
@@ -112,11 +124,20 @@ export const updatePass = (passId, updates) => {
       if (updates.parentApproval && !pass.parentApproval) {
         updatedPass.currentApprover = 'faculty';
         updatedPass.facultyNotificationTime = new Date().toISOString();
+        updatedPass.notifications = {
+          ...updatedPass.notifications,
+          parent: true
+        };
         console.log("Pass escalated to faculty approval:", updatedPass);
       }
       
       if (updates.facultyApproval) {
         updatedPass.status = 'approved';
+        updatedPass.notifications = {
+          ...updatedPass.notifications,
+          student: true
+        };
+        console.log("Pass fully approved, student notified:", updatedPass);
       }
       
       if (updatedPass.parentApproval && updatedPass.facultyApproval) {
@@ -161,6 +182,14 @@ export const getStats = (studentId) => {
     pending: studentPasses.filter(p => p.status === 'pending').length,
     rejected: studentPasses.filter(p => p.status === 'rejected').length
   };
+};
+
+// Get notifications for a student
+export const getStudentNotifications = (studentId) => {
+  return passes.filter(pass => 
+    pass.studentId === studentId && 
+    pass.notifications?.student === true
+  );
 };
 
 // Check and update faculty notification times

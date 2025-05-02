@@ -25,9 +25,6 @@ const Index = () => {
                   <Link to="/login" className="btn btn-primary" style={{ marginRight: '10px' }}>
                     Student Login
                   </Link>
-                  <Link to="/login" className="btn btn-outline">
-                    Security Login
-                  </Link>
                 </div>
               ) : (
                 <div>
